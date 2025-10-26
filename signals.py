@@ -1,40 +1,52 @@
 import pandas as pd
 from binance.client import Client
 import ta
+import numpy as np
 
 def get_signal(coin: str, mode: str):
-    """
-    coin: z.B. 'BTC'
-    mode: 'safe', 'balanced', 'aggressive'
-    """
     try:
         symbol = coin.upper() + "USDT"
         client = Client()  # Public API ohne Key
 
-        # Hole die letzten 100 Stundenkerzen
-        klines = client.get_klines(symbol=symbol, interval="1h", limit=100)
+        # Hole letzte 200 Stundenkerzen
+        klines = client.get_klines(symbol=symbol, interval="1h", limit=200)
         df = pd.DataFrame(klines, columns=[
             'timestamp','open','high','low','close','volume','close_time','qav',
             'num_trades','taker_base_vol','taker_quote_vol','ignore'
         ])
         df["close"] = df["close"].astype(float)
 
-        # --- Technische Indikatoren ---
+        # --- Indikatoren ---
         df["rsi"] = ta.momentum.RSIIndicator(df["close"], window=14).rsi()
         macd = ta.trend.MACD(df["close"])
         df["macd"] = macd.macd()
         df["macd_signal"] = macd.macd_signal()
         df["sma20"] = ta.trend.SMAIndicator(df["close"], window=20).sma_indicator()
+        df["sma50"] = ta.trend.SMAIndicator(df["close"], window=50).sma_indicator()
 
         latest = df.iloc[-1]
-        rsi = round(latest["rsi"], 2)
-        macd_val = round(latest["macd"], 4)
-        macd_signal = round(latest["macd_signal"], 4)
-        price = round(latest["close"], 2)
-        sma20 = round(latest["sma20"], 2)
+        rsi = latest["rsi"]
+        macd_val = latest["macd"]
+        macd_signal = latest["macd_signal"]
+        price = latest["close"]
+        sma20 = latest["sma20"]
+        sma50 = latest["sma50"]
+
+        # --- Trend-Analyse ---
+        recent_prices = df["close"].tail(10).values
+        x = np.arange(len(recent_prices))
+        slope = np.polyfit(x, recent_prices, 1)[0]
+
+        if slope > 0 and sma20 > sma50:
+            trend = "📈 Aufwärtstrend"
+        elif slope < 0 and sma20 < sma50:
+            trend = "📉 Abwärtstrend"
+        else:
+            trend = "➡️ Seitwärts"
 
         # --- Punktesystem ---
         score = 0
+        total_factors = 3
 
         # RSI
         if rsi < 45:
@@ -54,7 +66,19 @@ def get_signal(coin: str, mode: str):
         elif price < sma20:
             score -= 1
 
-        # --- Auswertung je Modus ---
+        # --- Dynamische Confidence ---
+        rsi_strength = abs(rsi - 50) / 50  # wie weit entfernt vom neutralen Bereich
+        macd_strength = abs(macd_val - macd_signal)
+        price_gap = abs(price - sma20) / price
+
+        confidence_raw = (
+            0.4 * rsi_strength +
+            0.4 * (macd_strength / max(1e-6, abs(macd_signal))) +
+            0.2 * price_gap
+        )
+        confidence = int(min(confidence_raw * 100, 100))
+
+        # --- Signalentscheidung ---
         if mode == "safe":
             if score >= 3:
                 signal = "BUY"
@@ -69,7 +93,7 @@ def get_signal(coin: str, mode: str):
                 signal = "SELL"
             else:
                 signal = "HOLD"
-        elif mode == "aggressive":
+        else:  # aggressive
             if score > 0:
                 signal = "BUY"
             elif score < 0:
@@ -77,13 +101,15 @@ def get_signal(coin: str, mode: str):
             else:
                 signal = "HOLD"
 
-        # --- Ausgabe ---
+        # --- Formatierte Ausgabe ---
         result = (
             f"📈 *Signal für {coin.upper()}*\n\n"
-            f"💰 Preis: `{price} USDT`\n"
-            f"📊 RSI: `{rsi}`\n"
-            f"📉 MACD: `{macd_val}` | Signal: `{macd_signal}`\n"
-            f"📏 SMA20: `{sma20}`\n\n"
+            f"💰 Preis: `{price:.2f} USDT`\n"
+            f"📊 RSI: `{rsi:.2f}`\n"
+            f"📉 MACD: `{macd_val:.4f}` | Signal: `{macd_signal:.4f}`\n"
+            f"📏 SMA20: `{sma20:.2f}` | SMA50: `{sma50:.2f}`\n"
+            f"📊 Trend: {trend}\n"
+            f"🎯 Confidence: `{confidence}%`\n\n"
             f"➡️ *Empfehlung:* {signal}"
         )
 

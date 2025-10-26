@@ -1,0 +1,28 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.egg-info/
+dist/
+build/
+venv/
+.env
+
+# --- VSCode ---
+.vscode/
+
+# --- macOS ---
+.DS_Store
+
+# --- Docker ---
+*.log
+*.sqlite3
+docker-compose.override.yml
+
+# --- PyCharm ---
+.idea/
+
+# --- Others ---
+*.swp
