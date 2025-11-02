@@ -4,6 +4,11 @@ from signals import get_signal  # Funktion jetzt mit modus parameter
 from database import *
 import random, string
 from bot import ASK_COIN, reply_markup_main
+from telegram import LabeledPrice, Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext, PreCheckoutQueryHandler
+import os
+
+
 
 
 
@@ -181,3 +186,40 @@ async def referral_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg = f"🔗 Du hast bisher {invites_count} Einladungen.\nLade mindestens 3 Freunde ein, um deinen Link freizuschalten.\n Lade freunde ein mit dem Link: {ref_link}"
 
     await update.message.reply_text(msg, reply_markup=reply_markup_main)
+
+
+## KAUFEN KAUFEN KAUFEN
+
+# --- 1. Befehl zum Starten des Kaufs ---
+async def buy_premium(update: Update, context: CallbackContext):
+    chat_id = update.effective_chat.id
+
+    title = "Premium freischalten"
+    description = "Erhalte Zugriff auf Premium-Features deines Bots."
+    payload = "premium_upgrade"        # interne Kennung
+    currency = "XTR"                   # Telegram Stars
+    prices = [LabeledPrice("Premium Zugang", 1)]  # 500 Stars
+
+    await context.bot.send_invoice(
+        chat_id=chat_id,
+        title=title,
+        description=description,
+        payload=payload,
+        provider_token="",  # leer lassen bei digitalen Gütern
+        currency=currency,
+        prices=prices,
+        start_parameter="premium-stars"
+    )
+
+
+# --- 2. Pre-Checkout bestätigen ---
+async def precheckout(update: Update, context: CallbackContext):
+    query = update.pre_checkout_query
+    await query.answer(ok=True)
+
+
+# --- 3. Nach erfolgreicher Zahlung ---
+async def successful_payment(update: Update, context: CallbackContext):
+    user_id = update.effective_user.id
+    set_premium(user_id, True)  # DB-Spalte 'ispremium' auf "ja"
+    await update.message.reply_text("✅ Zahlung erhalten! Dein Premium ist jetzt aktiv.")

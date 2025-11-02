@@ -108,6 +108,15 @@ def set_premium(telegram_id: int, status: bool):
     cur.close()
     conn.close()
 
+def get_premium(telegram_id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT is_premium FROM users WHERE telegram_id = %s;", (telegram_id,))
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+    return user
+
 
 def db_select(query):
     conn = get_connection()

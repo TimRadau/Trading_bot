@@ -37,7 +37,9 @@ async def set_commands(application):
         BotCommand("help", "Erklärung der Indikatoren"),
         BotCommand("cancel", "Abbrechen"),
         BotCommand("compare", "Vergleiche zwei Coins"),
-        BotCommand("referral", "Lade Freunde ein")
+        BotCommand("referral", "Lade Freunde ein"),
+        BotCommand("buy", "kaufe Premium")
+
     ]
     await application.bot.set_my_commands(commands)
 
@@ -64,6 +66,9 @@ def main():
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("compare", compare_command))
     app.add_handler(CommandHandler("referral", referral_command))
+    app.add_handler(CommandHandler("buy", buy_premium))
+    app.add_handler(PreCheckoutQueryHandler(precheckout))
+    app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment))
 
 
 
