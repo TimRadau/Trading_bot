@@ -3,12 +3,21 @@ from telegram.ext import ConversationHandler, ContextTypes
 from signals import get_signal  # Funktion jetzt mit modus parameter
 from database import *
 import random, string
-from bot import ASK_COIN, reply_markup_main
+from bot import ASK_COIN, ASK_REVERSAL, ASK_RESISTANCE, reply_markup_main
 from telegram import LabeledPrice, Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext, PreCheckoutQueryHandler
 import os
+from divergence import get_reversal_signal
+from resistance import get_support_resistance
+from scanner import coin_scanner_top3
 
 
+import logging
+# --- Logging ---
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
 
 
 
@@ -71,10 +80,62 @@ async def signal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ASK_COIN
 
+# --- /reversal ---
+async def reversal(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🔍 Für welchen Coin möchtest du ein Signal? (z. B. BTC, SOL, ETH)",
+        reply_markup=reply_markup_main
+    )
+    return ASK_REVERSAL
+
+
+async def handle_reversal_coin(update, context):
+    coin = update.message.text.strip()
+
+    # Deine eigentliche Analysefunktion
+    result, mode = get_reversal_signal(coin)
+
+    await update.message.reply_text(result, parse_mode=mode)
+
+    return ConversationHandler.END
+
+# --- /resistance ---
+async def resistance(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🔍 Für welchen Coin möchtest du ein Signal? (z. B. BTC, SOL, ETH)",
+        reply_markup=reply_markup_main
+    )
+    return ASK_RESISTANCE
+
+
+async def handle_resistance_coin(update, context):
+    coin = update.message.text.strip()
+
+    # Deine eigentliche Analysefunktion
+    result, mode = get_support_resistance(coin)
+
+    await update.message.reply_text(result, parse_mode=mode)
+
+    return ConversationHandler.END
+
+
+# --- /scan ---
+
+async def scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = await coin_scanner_top3()
+    await update.message.reply_text(msg[0], parse_mode=msg[1])
+
+
 # --- /compare ---
 async def compare_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    premium = get_premium(user_id)
+
+    if not premium["is_premium"]:
+        await update.message.reply_text("❌ Du beötigst Premium um diese Funktion zu benutzen")
+        return
     if len(context.args) != 2:
-        await update.message.reply_text("❌ Bitte gib genau zwei Coins an. Beispiel:\n/compare BTC ETH")
+        await update.message.reply_text("❌ Bitte gebe genau zwei Coins an. Beispiel:\n/compare BTC ETH")
         return
 
     coin1, coin2 = context.args[0].upper(), context.args[1].upper()
@@ -118,12 +179,19 @@ async def compare_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_coin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     coin = update.message.text.strip().upper()
     context.user_data["coin"] = coin
-
-    keyboard = [
-        [InlineKeyboardButton("Safe", callback_data="safe")],
-        [InlineKeyboardButton("Balanced", callback_data="balanced")],
-        [InlineKeyboardButton("Aggressive", callback_data="aggressive")]
-    ]
+    user_id = update.effective_user.id
+    premium = get_premium(user_id)
+    if not premium["is_premium"]:
+        await update.message.reply_text("Du beötigst Premium um Balanced und Aggressive mode freizuschalten")
+        keyboard = [
+            [InlineKeyboardButton("Safe", callback_data="safe")]
+        ]
+    else:
+        keyboard = [
+            [InlineKeyboardButton("Safe", callback_data="safe")],
+            [InlineKeyboardButton("Balanced", callback_data="balanced")],
+            [InlineKeyboardButton("Aggressive", callback_data="aggressive")]
+        ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
@@ -223,3 +291,6 @@ async def successful_payment(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     set_premium(user_id, True)  # DB-Spalte 'ispremium' auf "ja"
     await update.message.reply_text("✅ Zahlung erhalten! Dein Premium ist jetzt aktiv.")
+
+
+

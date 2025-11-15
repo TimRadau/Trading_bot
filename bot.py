@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from database import *
 from commands import *
 
+
 # DB initialisieren
 init_db()
 
@@ -19,10 +20,12 @@ logging.basicConfig(
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
-    raise ValueError("❌ BOT_TOKEN nicht gefunden! Stelle sicher, dass er in der .env-Datei steht.")
+    raise ValueError("BOT_TOKEN nicht gefunden! Stelle sicher, dass er in der .env-Datei steht.")
 
 # --- Zustände ---
 ASK_COIN = 1
+ASK_REVERSAL = 2
+ASK_RESISTANCE = 3
 
 # --- Hauptmenü (ReplyKeyboard) ---
 main_menu = [["/start", "/signal", "/help"], ["/cancel"]]
@@ -38,7 +41,10 @@ async def set_commands(application):
         BotCommand("cancel", "Abbrechen"),
         BotCommand("compare", "Vergleiche zwei Coins"),
         BotCommand("referral", "Lade Freunde ein"),
-        BotCommand("buy", "kaufe Premium")
+        BotCommand("buy", "kaufe Premium"),
+        BotCommand("reversal", "Finde den Punkt wo der Markt sich dreht"),
+        BotCommand("resistance", "Finde die resistance und support level"),
+        BotCommand("scan", "Finde die coins die als nächstes steigen")
 
     ]
     await application.bot.set_my_commands(commands)
@@ -58,15 +64,32 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
 
+    conv_handler_reversal = ConversationHandler(
+        entry_points=[CommandHandler("reversal", reversal)],
+        states={ASK_REVERSAL: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_reversal_coin)]},
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+
+    conv_handler_resistance = ConversationHandler(
+        entry_points=[CommandHandler("resistance", resistance)],
+        states={ASK_RESISTANCE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_resistance_coin)]},
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(conv_handler)
+    app.add_handler(conv_handler_reversal)
+    app.add_handler(conv_handler_resistance)
     app.add_handler(CallbackQueryHandler(handle_mode_callback))
     app.add_handler(CommandHandler("cancel", cancel))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("compare", compare_command))
     app.add_handler(CommandHandler("referral", referral_command))
     app.add_handler(CommandHandler("buy", buy_premium))
+    app.add_handler(CommandHandler("reversal", reversal))
+    app.add_handler(CommandHandler("resistance", resistance))
+    app.add_handler(CommandHandler("scan", scan))
     app.add_handler(PreCheckoutQueryHandler(precheckout))
     app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment))
 
