@@ -83,16 +83,16 @@ async def coin_scanner_top3():
     top3 = sorted(results, key=lambda x: x['score'], reverse=True)[:3]
 
     # 6. Telegram-Output mit allen Indikatoren
-    msg = "🔥 Top 3 Coins für Bullish Reversal:\n\n"
+    msg = "🔥 Top 3 Coins for Bullish Reversal:\n\n"
     for i, c in enumerate(top3, start=1):
         msg += (
             f"{i}️⃣ {c['coin']}\n"
-            f"💰 Preis: {c['price']:.2f} USDT\n"
+            f"💰 Price: {c['price']:.2f} USDT\n"
             f"📊 RSI: {c['rsi']:.2f}\n"
             f"📉 MACD: {c['macd']:.4f} | Signal: {c['macd_signal']:.4f}\n"
             f"📏 Support: {c['support']:.2f} | Resistance: {c['resistance']:.2f}\n"
             f"🎯 Score: {c['score']:.0f}/100\n"
-            f"📝 Empfehlung: {('starker Einstieg' if c['score']>=70 else 'möglicher Einstieg')}, möglicher Ausstieg: {c['resistance']:.2f} USDT\n\n"
+            f"📝 Recommendation: {('strong entry' if c['score']>=70 else 'possible entry')}, possible exit: {c['resistance']:.2f} USDT\n\n"
         )
 
     return msg, "Markdown"

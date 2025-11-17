@@ -6,44 +6,49 @@ import ta
 
 def detect_divergence(prices, rsi_values):
     """
-    Erkennt Bullish / Bearish Divergenzen anhand der letzten 5 Pivot Points.
-    Gibt zurück:
+    Detects bullish / bearish divergences by comparing the last two pivot highs/lows.
+    Returns:
     - "bullish"
     - "bearish"
     - None
     """
 
-    # Pivot-Lows / Pivot-Highs erkennen
-    window = 5
-    price_low_idx = prices.rolling(window, center=True).apply(lambda x: x[window // 2] == x.min(), raw=True)
-    price_high_idx = prices.rolling(window, center=True).apply(lambda x: x[window // 2] == x.max(), raw=True)
+    def local_lows(series):
+        cond = (
+            (series.shift(2) > series.shift(1)) &
+            (series.shift(1) > series) &
+            (series.shift(-1) > series) &
+            (series.shift(-2) > series)
+        )
+        return series[cond].dropna()
 
-    rsi_low_idx = rsi_values.rolling(window, center=True).apply(lambda x: x[window // 2] == x.min(), raw=True)
-    rsi_high_idx = rsi_values.rolling(window, center=True).apply(lambda x: x[window // 2] == x.max(), raw=True)
+    def local_highs(series):
+        cond = (
+            (series.shift(2) < series.shift(1)) &
+            (series.shift(1) < series) &
+            (series.shift(-1) < series) &
+            (series.shift(-2) < series)
+        )
+        return series[cond].dropna()
 
-    # Bullish Divergenz:
-    # Preis macht tieferes Tief, RSI macht höheres Tief
-    try:
-        price_pivots = prices[price_low_idx == 1].tail(2)
-        rsi_pivots = rsi_values[rsi_low_idx == 1].tail(2)
+    price_lows = local_lows(prices)
+    rsi_lows = local_lows(rsi_values)
+    price_highs = local_highs(prices)
+    rsi_highs = local_highs(rsi_values)
 
-        if len(price_pivots) == 2 and len(rsi_pivots) == 2:
-            if price_pivots.iloc[-1] < price_pivots.iloc[-2] and rsi_pivots.iloc[-1] > rsi_pivots.iloc[-2]:
-                return "bullish"
-    except:
-        pass
+    # Bullish: price makes lower low, RSI makes higher low
+    if len(price_lows) >= 2 and len(rsi_lows) >= 2:
+        price_pivots = price_lows.tail(2)
+        rsi_pivots = rsi_lows.tail(2)
+        if price_pivots.iloc[-1] < price_pivots.iloc[-2] and rsi_pivots.iloc[-1] > rsi_pivots.iloc[-2]:
+            return "bullish"
 
-    # Bearish Divergenz:
-    # Preis macht höheres Hoch, RSI macht tieferes Hoch
-    try:
-        price_pivots_high = prices[price_high_idx == 1].tail(2)
-        rsi_pivots_high = rsi_values[rsi_high_idx == 1].tail(2)
-
-        if len(price_pivots_high) == 2 and len(rsi_pivots_high) == 2:
-            if price_pivots_high.iloc[-1] > price_pivots_high.iloc[-2] and rsi_pivots_high.iloc[-1] < rsi_pivots_high.iloc[-2]:
-                return "bearish"
-    except:
-        pass
+    # Bearish: price makes higher high, RSI makes lower high
+    if len(price_highs) >= 2 and len(rsi_highs) >= 2:
+        price_pivots_high = price_highs.tail(2)
+        rsi_pivots_high = rsi_highs.tail(2)
+        if price_pivots_high.iloc[-1] > price_pivots_high.iloc[-2] and rsi_pivots_high.iloc[-1] < rsi_pivots_high.iloc[-2]:
+            return "bearish"
 
     return None
 
@@ -99,28 +104,27 @@ def get_reversal_signal(coin: str):
 
         # Leicht bullish
         elif macd_turns_bullish:
-            signal = "HOLD (leicht bullish)"
+            signal = "HOLD (slightly bullish)"
             confidence = 40
 
         # Leicht bearish
         elif macd_turns_bearish:
-            signal = "HOLD (leicht bearish)"
+            signal = "HOLD (slightly bearish)"
             confidence = 40
 
         # === AUSGABE FORMAT ===
         result = (
-            f"📈 *Trend-Reversal Signal für {coin.upper()}*\n\n"
-            f"💰 Preis: `{price:.2f} USDT`\n"
+            f"📈 *Trend Reversal Signal for {coin.upper()}*\n\n"
+            f"💰 Price: `{price:.2f} USDT`\n"
             f"📊 RSI: `{rsi:.2f}`\n"
             f"📉 MACD: `{macd_val:.4f}` | Signal: `{macd_signal:.4f}`\n"
-            f"🔍 Divergenz: `{divergence or 'Keine'}`\n"
+            f"🔍 Divergence: `{divergence or 'None'}`\n"
             f"📉 MACD Trend: `{'Bullish' if macd_turns_bullish else 'Bearish'}`\n"
             f"🎯 Confidence: `{confidence}%`\n\n"
-            f"➡️ *Empfehlung: {signal}*"
+            f"➡️ *Recommendation: {signal}*"
         )
 
         return result, "Markdown"
 
     except Exception as e:
-        return f"Fehler: {str(e)}", "Markdown"
-
+        return f"Error: {str(e)}", "Markdown"

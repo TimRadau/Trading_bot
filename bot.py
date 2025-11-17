@@ -35,17 +35,18 @@ reply_markup_main = ReplyKeyboardMarkup(main_menu, resize_keyboard=True)
 # --- Commands-Menü setzen ---
 async def set_commands(application):
     commands = [
-        BotCommand("start", "Starte den Bot"),
-        BotCommand("signal", "Hole ein Signal für einen Coin"),
-        BotCommand("help", "Erklärung der Indikatoren"),
-        BotCommand("cancel", "Abbrechen"),
-        BotCommand("compare", "Vergleiche zwei Coins"),
-        BotCommand("referral", "Lade Freunde ein"),
-        BotCommand("buy", "kaufe Premium"),
-        BotCommand("reversal", "Finde den Punkt wo der Markt sich dreht"),
-        BotCommand("resistance", "Finde die resistance und support level"),
-        BotCommand("scan", "Finde die coins die als nächstes steigen")
-
+        BotCommand("start", "Start the bot"),
+        BotCommand("help", "Explanation of indicators"),
+        BotCommand("signal", "Get a trading signal for a coin"),
+        BotCommand("reversal", "Detect market reversal points"),
+        BotCommand("resistance", "Find support & resistance levels"),
+        BotCommand("scan", "Scan for top coins likely to rise next"),
+        BotCommand("compare", "Compare two coins"),
+        BotCommand("referral", "Invite friends and earn rewards"),
+        BotCommand("buy", "Purchase Premium access"),
+        BotCommand("support", "Contact support"),
+        BotCommand("terms", "Terms and Conditions"),
+        BotCommand("cancel", "Cancel the current action")
     ]
     await application.bot.set_my_commands(commands)
 
@@ -90,8 +91,10 @@ def main():
     app.add_handler(CommandHandler("reversal", reversal))
     app.add_handler(CommandHandler("resistance", resistance))
     app.add_handler(CommandHandler("scan", scan))
+    app.add_handler(CommandHandler("terms", terms))
     app.add_handler(PreCheckoutQueryHandler(precheckout))
     app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment))
+    app.add_handler(CommandHandler("support", support))
 
 
 

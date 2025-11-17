@@ -38,11 +38,11 @@ def get_signal(coin: str, mode: str):
         slope = np.polyfit(x, recent_prices, 1)[0]
 
         if slope > 0 and sma20 > sma50:
-            trend = "📈 Aufwärtstrend"
+            trend = "📈 Uptrend"
         elif slope < 0 and sma20 < sma50:
-            trend = "📉 Abwärtstrend"
+            trend = "📉 Downtrend"
         else:
-            trend = "➡️ Seitwärts"
+            trend = "➡️ Sideways"
 
         # --- Punktesystem ---
         score = 0
@@ -103,17 +103,17 @@ def get_signal(coin: str, mode: str):
 
         # --- Formatierte Ausgabe ---
         result = (
-            f"📈 *Signal für {coin.upper()}*\n\n"
-            f"💰 Preis: `{price:.2f} USDT`\n"
+            f"📈 *Signal for {coin.upper()}*\n\n"
+            f"💰 Price: `{price:.2f} USDT`\n"
             f"📊 RSI: `{rsi:.2f}`\n"
             f"📉 MACD: `{macd_val:.4f}` | Signal: `{macd_signal:.4f}`\n"
             f"📏 SMA20: `{sma20:.2f}` | SMA50: `{sma50:.2f}`\n"
             f"📊 Trend: {trend}\n"
             f"🎯 Confidence: `{confidence}%`\n\n"
-            f"➡️ *Empfehlung:* {signal}"
+            f"➡️ *Recommendation:* {signal}"
         )
 
         return result, "Markdown"
 
     except Exception as e:
-        return f"⚠️ Fehler beim Abrufen der Daten für {coin.upper()}: {e}", "Markdown"
+        return f"⚠️ Error fetching data for {coin.upper()}: {e}", "Markdown"

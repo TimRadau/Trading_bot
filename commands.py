@@ -48,11 +48,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # normale Begrüßung
     welcome_text = (
-        "👋 Willkommen beim *Trading-Signale-Bot!*\n\n"
-        "⚠️ *Disclaimer:* Diese Signale basieren ausschließlich auf technischen Indikatoren "
-        "und stellen *keine Finanzberatung* dar.\n\n"
-        "Nutze /signal, um ein Signal für einen Coin zu erhalten.\n"
-        "Verwende /help, um mehr über die Indikatoren zu erfahren."
+        "👋 Welcome to the *Trading Signals Bot!*\n\n"
+        "⚠️ *Disclaimer:* These signals rely solely on technical indicators "
+        "and do *not constitute financial advice*.\n\n"
+        "Use /signal to receive a signal for a coin.\n"
+        "Use /help to learn more about the indicators."
     )
     await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=reply_markup_main)
 
@@ -61,21 +61,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- /help ---
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = (
-        "ℹ️ *Erklärung der wichtigsten Indikatoren:*\n\n"
-        "📊 *RSI (Relative Strength Index)* – Misst, ob ein Coin überkauft (>70) oder überverkauft (<30) ist.\n"
-        "📉 *MACD (Moving Average Convergence Divergence)* – Zeigt Trendwenden: "
-        "Ein Bullish Crossover (MACD > Signal) gilt als Kaufsignal.\n"
-        "📏 *SMA (Simple Moving Average)* – Durchschnittspreis über einen Zeitraum. "
-        "Wenn der aktuelle Preis über der SMA liegt, spricht das für einen Aufwärtstrend.\n"
-        "🎯 *Confidence* – Zeigt, wie stark die Indikatoren übereinstimmen (0–100 %).\n"
-        "📈 *Trend* – Erkennt, ob der Markt aktuell steigt, fällt oder seitwärts läuft."
+        "ℹ️ *Explanation of the key indicators:*\n\n"
+        "📊 *RSI (Relative Strength Index)* – Measures whether a coin is overbought (>70) or oversold (<30).\n"
+        "📉 *MACD (Moving Average Convergence Divergence)* – Shows trend reversals: "
+        "A bullish crossover (MACD > signal) is considered a buy signal.\n"
+        "📏 *SMA (Simple Moving Average)* – Average price over a period. "
+        "If the current price is above the SMA, it indicates an uptrend.\n"
+        "🎯 *Confidence* – Shows how strongly the indicators align (0–100 %).\n"
+        "📈 *Trend* – Detects whether the market is currently rising, falling, or moving sideways."
     )
     await update.message.reply_text(help_text, parse_mode="Markdown", reply_markup=reply_markup_main)
 
 # --- /signal ---
 async def signal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🔍 Für welchen Coin möchtest du ein Signal? (z. B. BTC, SOL, ETH)",
+        "🔍 Which coin would you like a signal for? (e.g. BTC, SOL, ETH)",
         reply_markup=reply_markup_main
     )
     return ASK_COIN
@@ -83,7 +83,7 @@ async def signal(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- /reversal ---
 async def reversal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🔍 Für welchen Coin möchtest du ein Signal? (z. B. BTC, SOL, ETH)",
+        "🔍 Which coin would you like a signal for? (e.g. BTC, SOL, ETH)",
         reply_markup=reply_markup_main
     )
     return ASK_REVERSAL
@@ -102,7 +102,7 @@ async def handle_reversal_coin(update, context):
 # --- /resistance ---
 async def resistance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🔍 Für welchen Coin möchtest du ein Signal? (z. B. BTC, SOL, ETH)",
+        "🔍 Which coin would you like a signal for? (e.g. BTC, SOL, ETH)",
         reply_markup=reply_markup_main
     )
     return ASK_RESISTANCE
@@ -132,10 +132,10 @@ async def compare_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     premium = get_premium(user_id)
 
     if not premium["is_premium"]:
-        await update.message.reply_text("❌ Du beötigst Premium um diese Funktion zu benutzen")
+        await update.message.reply_text("❌ You need Premium to use this feature.")
         return
     if len(context.args) != 2:
-        await update.message.reply_text("❌ Bitte gebe genau zwei Coins an. Beispiel:\n/compare BTC ETH")
+        await update.message.reply_text("❌ Please provide exactly two coins. Example:\n/compare BTC ETH")
         return
 
     coin1, coin2 = context.args[0].upper(), context.args[1].upper()
@@ -148,7 +148,7 @@ async def compare_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     import re
 
     def extract_values(text):
-        match_signal = re.search(r"Empfehlung:\* (\w+)", text)
+        match_signal = re.search(r"\*Recommendation:\* ([^\n]+)", text)
         match_conf = re.search(r"Confidence: `(\d+)%`", text)
         signal = match_signal.group(1) if match_signal else "?"
         confidence = int(match_conf.group(1)) if match_conf else 0
@@ -159,17 +159,17 @@ async def compare_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Bewertung wer stärker ist
     if conf1 > conf2:
-        stronger = f"{coin1} stärker."
+        stronger = f"{coin1} is stronger."
     elif conf2 > conf1:
-        stronger = f"{coin2} stärker."
+        stronger = f"{coin2} is stronger."
     else:
-        stronger = "Beide gleich stark."
+        stronger = "Both equally strong."
 
     response = (
-        f"📊 *Vergleichsanalyse*\n\n"
+        f"📊 *Comparison Analysis*\n\n"
         f"{coin1}: *{sig1}* ({conf1}%)\n"
         f"{coin2}: *{sig2}* ({conf2}%)\n\n"
-        f"➡️ *Empfehlung:* {stronger}"
+        f"➡️ *Recommendation:* {stronger}"
     )
 
     await update.message.reply_text(response, parse_mode="Markdown")
@@ -182,7 +182,7 @@ async def handle_coin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     premium = get_premium(user_id)
     if not premium["is_premium"]:
-        await update.message.reply_text("Du beötigst Premium um Balanced und Aggressive mode freizuschalten")
+        await update.message.reply_text("You need Premium to unlock Balanced and Aggressive modes.")
         keyboard = [
             [InlineKeyboardButton("Safe", callback_data="safe")]
         ]
@@ -195,7 +195,7 @@ async def handle_coin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        "⚙️ Wähle den Modus für die Signalberechnung:",
+        "⚙️ Select the mode for the signal calculation:",
         reply_markup=reply_markup
     )
     return ConversationHandler.END
@@ -208,7 +208,7 @@ async def handle_mode_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     coin = context.user_data.get("coin")
 
     if not coin:
-        await query.edit_message_text("❌ Fehler: Kein Coin ausgewählt.")
+        await query.edit_message_text("❌ Error: No coin selected.")
         return
 
     signal_text, parse_mode = get_signal(coin, mode)
@@ -216,8 +216,9 @@ async def handle_mode_callback(update: Update, context: ContextTypes.DEFAULT_TYP
 
 # --- /cancel ---
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ Abgebrochen.", reply_markup=reply_markup_main)
+    await update.message.reply_text("❌ Cancelled.", reply_markup=reply_markup_main)
     return ConversationHandler.END
+
 
 
 
@@ -244,16 +245,22 @@ async def referral_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         add_user(user_id, update.effective_user.username, invited_by)
         user = get_user(user_id)
 
-    ref_code = user['referral_code']
-    invites_count = user['referrals_count']
-    ref_link = f"https://t.me/Trading_signals_pr_bot?start={ref_code}"
-    if invites_count >= 3:
-        link = f"hier binance link einfügen"
-        msg = f"🎉 Du hast {invites_count} Einladungen!\nHier ist dein Premium-Link:\n{link}"
-    else:
-        msg = f"🔗 Du hast bisher {invites_count} Einladungen.\nLade mindestens 3 Freunde ein, um deinen Link freizuschalten.\n Lade freunde ein mit dem Link: {ref_link}"
+        ref_code = user['referral_code']
+        invites_count = user['referrals_count']
+        ref_link = f"https://t.me/Trading_signals_pr_bot?start={ref_code}"
 
-    await update.message.reply_text(msg, reply_markup=reply_markup_main)
+        if invites_count >= 3:
+            link = f"insert Binance link here"
+            msg = f"🎉 You have {invites_count} invitations!\nHere is your premium link:\n{link}"
+        else:
+            msg = (
+                f"🔗 You currently have {invites_count} invitations.\n"
+                "Invite at least 3 friends to unlock your link.\n"
+                f"Invite friends using this link: {ref_link}"
+            )
+
+        await update.message.reply_text(msg, reply_markup=reply_markup_main)
+
 
 
 ## KAUFEN KAUFEN KAUFEN
@@ -262,11 +269,12 @@ async def referral_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def buy_premium(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
 
-    title = "Premium freischalten"
-    description = "Erhalte Zugriff auf Premium-Features deines Bots."
-    payload = "premium_upgrade"        # interne Kennung
+    title = "Activate Premium"
+    description = "Get access to premium features of your bot."
+    payload = "premium_upgrade"        # internal identifier
     currency = "XTR"                   # Telegram Stars
-    prices = [LabeledPrice("Premium Zugang", 1)]  # 500 Stars
+    prices = [LabeledPrice("Premium Access", 1)]  # 500 Stars
+
 
     await context.bot.send_invoice(
         chat_id=chat_id,
@@ -290,7 +298,93 @@ async def precheckout(update: Update, context: CallbackContext):
 async def successful_payment(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     set_premium(user_id, True)  # DB-Spalte 'ispremium' auf "ja"
-    await update.message.reply_text("✅ Zahlung erhalten! Dein Premium ist jetzt aktiv.")
+    await update.message.reply_text("✅ Payment received! Your premium is now active.")
 
 
 
+
+# --- Support and Terms ---
+
+async def support(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    msg = (
+        "📞 *Support*\n\n"
+        "For support, please send a message to: @Tim9831\n"
+        f"Your User ID is: `{user_id}`\n\n"
+        "Please provide this User ID when contacting support."
+    )
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
+
+
+
+async def terms(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = (
+        "📜 *Terms & Conditions*\n\n"
+        "Please read these terms carefully before using this bot.\n\n"
+
+        "1️⃣ *No Financial Advice*\n"
+        "The information, signals, analyses, indicators, and recommendations provided by this bot "
+        "*do not constitute financial advice, investment advice, or a buy/sell recommendation*. "
+        "All content is solely for *informational and educational purposes*.\n\n"
+
+        "2️⃣ *Use of Data & Indicators*\n"
+        "The signals rely on publicly accessible market prices, technical indicators "
+        "(e.g. RSI, MACD, MA, volume analyses), and data from third parties. "
+        "This data may be incomplete, delayed, or inaccurate. "
+        "There is *no guarantee of accuracy or timeliness*.\n\n"
+
+        "3️⃣ *Third-Party APIs (e.g. Binance)*\n"
+        "This bot uses data from third-party APIs. "
+        "The bot is *not affiliated* with Binance or any other exchange. "
+        "All API data is subject to their terms of use. "
+        "Third parties can change, restrict, or disable their APIs at any time. "
+        "The operator assumes no responsibility for outages or discrepancies.\n\n"
+
+        "4️⃣ *No Profit Guarantee*\n"
+        "Cryptocurrencies are highly volatile and involve considerable risk. "
+        "There is *no guarantee* of profits, price developments, or successful trades. "
+        "Past performance is not indicative of future results.\n\n"
+
+        "5️⃣ *Personal Responsibility*\n"
+        "You always act *at your own risk*. "
+        "You are responsible for conducting your own research (DYOR) "
+        "and making informed decisions.\n\n"
+
+        "6️⃣ *Limitation of Liability*\n"
+        "The operator of this bot accepts *no liability* for losses, damages, or "
+        "other consequences arising from the use of the signals, data, or functions. "
+        "Use is entirely at your own risk.\n\n"
+
+        "7️⃣ *Technical Risks*\n"
+        "The operator is not liable for:\n"
+        "- Server outages\n"
+        "- API failures or delays\n"
+        "- Incorrect or incomplete data\n"
+        "- Bot malfunctions\n"
+        "- Issues caused by Telegram itself\n"
+        "There is no entitlement to constant availability or functionality.\n\n"
+
+        "8️⃣ *Use of the Bot*\n"
+        "By using this bot you confirm that you are at least 18 years old "
+        "and meet the legal requirements of your country for trading cryptocurrencies.\n\n"
+
+        "9️⃣ *Payments & Services*\n"
+        "For payments (e.g. premium features via Telegram Stars):\n"
+        "- There is *no entitlement to specific signal performance*.\n"
+        "- Services can be changed, expanded, or discontinued at any time.\n"
+        "- There are *no refunds* unless required by law.\n\n"
+
+        "🔟 *Data Protection*\n"
+        "The bot stores only the data necessary for operation "
+        "(e.g. Telegram user ID). No data is sold or shared with third parties.\n\n"
+
+        "1️⃣1️⃣ *Changes to the Terms*\n"
+        "The operator may update these terms at any time. Changes take effect "
+        "immediately upon publication.\n\n"
+
+        "💬 If you have questions, please use the /support command.\n\n"
+        "By using this bot you fully agree to these terms."
+    )
+
+    await update.message.reply_text(msg, parse_mode='Markdown')

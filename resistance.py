@@ -40,27 +40,27 @@ def get_support_resistance(coin: str):
     # Einschätzung
     if support and support_dist is not None:
         if support_dist/price < 0.01:  # <1% entfernt
-            support_msg = "Preis sehr nah am Support → möglicher Bounce"
+            support_msg = "Price very close to support → possible bounce"
         else:
-            support_msg = f"Abstand zum Support: {support_dist:.2f} USDT"
+            support_msg = f"Distance to support: {support_dist:.2f} USDT"
     else:
-        support_msg = "Kein Support gefunden"
+        support_msg = "No support found"
 
     if resistance and resistance_dist is not None:
         if resistance_dist/price < 0.01:
-            resistance_msg = "Preis sehr nah an Resistance → mögliches Ende des Aufwärtstrends"
+            resistance_msg = "Price very close to resistance → potential end of the uptrend"
         else:
-            resistance_msg = f"Abstand zur Resistance: {resistance_dist:.2f} USDT"
+            resistance_msg = f"Distance to resistance: {resistance_dist:.2f} USDT"
     else:
-        resistance_msg = "Keine Resistance gefunden"
+        resistance_msg = "No resistance found"
 
     # Ausgabe
     result = (
-        f"📈 *Support/Resistance für {coin.upper()}*\n\n"
-        f"💰 Aktueller Preis: `{price:.2f} USDT`\n"
+        f"📈 *Support/Resistance for {coin.upper()}*\n\n"
+        f"💰 Current Price: `{price:.2f} USDT`\n"
         f"📏 Support: `{support}`\n"
         f"📏 Resistance: `{resistance}`\n"
-        f"📝 Einschätzung:\n"
+        f"📝 Assessment:\n"
         f"{support_msg}\n"
         f"{resistance_msg}"
     )
