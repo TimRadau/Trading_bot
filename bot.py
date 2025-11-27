@@ -44,6 +44,7 @@ async def set_commands(application):
         BotCommand("compare", "Compare two coins"),
         BotCommand("referral", "Invite friends and earn rewards"),
         BotCommand("buy", "Purchase Premium access"),
+        #BotCommand("stars", "Show earned Telegram Stars"),
         BotCommand("support", "Contact support"),
         BotCommand("terms", "Terms and Conditions"),
         BotCommand("cancel", "Cancel the current action")
@@ -91,6 +92,7 @@ def main():
     app.add_handler(CommandHandler("reversal", reversal))
     app.add_handler(CommandHandler("resistance", resistance))
     app.add_handler(CommandHandler("scan", scan))
+    app.add_handler(CommandHandler("stars", stars))
     app.add_handler(CommandHandler("terms", terms))
     app.add_handler(PreCheckoutQueryHandler(precheckout))
     app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment))

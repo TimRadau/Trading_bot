@@ -34,6 +34,15 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS payments (
+            id SERIAL PRIMARY KEY,
+            telegram_id BIGINT NOT NULL,
+            amount BIGINT NOT NULL,
+            currency TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
     conn.commit()
     cur.close()
     conn.close()
@@ -130,3 +139,29 @@ def db_select(query):
 
 
 db_select("Select * from users")
+
+
+def add_payment(telegram_id: int, amount: int, currency: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO payments (telegram_id, amount, currency)
+        VALUES (%s, %s, %s);
+    """, (telegram_id, amount, currency))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def get_total_stars():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT COALESCE(SUM(amount), 0) AS total
+        FROM payments
+        WHERE currency = 'XTR';
+    """)
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+    return result["total"] if result else 0

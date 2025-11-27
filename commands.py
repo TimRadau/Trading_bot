@@ -42,10 +42,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         add_user(user_id, username, invited_by)
         user = get_user(user_id)
 
-        # Wenn eingeladen -> Referral-Zähler erhöhen
-        if invited_by:
-            increment_referral(invited_by)
-
     # normale Begrüßung
     welcome_text = (
         "👋 Welcome to the *Trading Signals Bot!*\n\n"
@@ -82,6 +78,12 @@ async def signal(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- /reversal ---
 async def reversal(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    premium = get_premium(user_id)
+    if not premium["is_premium"]:
+        await update.message.reply_text("❌ You need Premium to use this feature.")
+        return ConversationHandler.END
+
     await update.message.reply_text(
         "🔍 Which coin would you like a signal for? (e.g. BTC, SOL, ETH)",
         reply_markup=reply_markup_main
@@ -90,6 +92,12 @@ async def reversal(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_reversal_coin(update, context):
+    user_id = update.effective_user.id
+    premium = get_premium(user_id)
+    if not premium["is_premium"]:
+        await update.message.reply_text("❌ You need Premium to use this feature.")
+        return ConversationHandler.END
+
     coin = update.message.text.strip()
 
     # Deine eigentliche Analysefunktion
@@ -101,6 +109,12 @@ async def handle_reversal_coin(update, context):
 
 # --- /resistance ---
 async def resistance(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    premium = get_premium(user_id)
+    if not premium["is_premium"]:
+        await update.message.reply_text("❌ You need Premium to use this feature.")
+        return ConversationHandler.END
+
     await update.message.reply_text(
         "🔍 Which coin would you like a signal for? (e.g. BTC, SOL, ETH)",
         reply_markup=reply_markup_main
@@ -109,6 +123,12 @@ async def resistance(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_resistance_coin(update, context):
+    user_id = update.effective_user.id
+    premium = get_premium(user_id)
+    if not premium["is_premium"]:
+        await update.message.reply_text("❌ You need Premium to use this feature.")
+        return ConversationHandler.END
+
     coin = update.message.text.strip()
 
     # Deine eigentliche Analysefunktion
@@ -122,6 +142,12 @@ async def handle_resistance_coin(update, context):
 # --- /scan ---
 
 async def scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    premium = get_premium(user_id)
+    if not premium["is_premium"]:
+        await update.message.reply_text("❌ You need Premium to use this feature.")
+        return
+
     msg = await coin_scanner_top3()
     await update.message.reply_text(msg[0], parse_mode=msg[1])
 
@@ -232,7 +258,6 @@ async def referral_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user = get_user(user_id)
 
-    # User noch nicht in DB -> anlegen
     if not user:
         ref_code = generate_ref_code()
         invited_by = None
@@ -245,21 +270,21 @@ async def referral_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         add_user(user_id, update.effective_user.username, invited_by)
         user = get_user(user_id)
 
-        ref_code = user['referral_code']
-        invites_count = user['referrals_count']
-        ref_link = f"https://t.me/Trading_signals_pr_bot?start={ref_code}"
+    ref_code = user['referral_code']
+    invites_count = user['referrals_count']
+    ref_link = f"https://t.me/Trading_signals_pr_bot?start={ref_code}"
 
-        if invites_count >= 3:
-            link = f"insert Binance link here"
-            msg = f"🎉 You have {invites_count} invitations!\nHere is your premium link:\n{link}"
-        else:
-            msg = (
-                f"🔗 You currently have {invites_count} invitations.\n"
-                "Invite at least 3 friends to unlock your link.\n"
-                f"Invite friends using this link: {ref_link}"
-            )
+    if invites_count >= 3:
+        link = f"insert Binance link here"
+        msg = f"🎉 You have {invites_count} invitations!\nHere is your premium link:\n{link}"
+    else:
+        msg = (
+            f"🔗 You currently have {invites_count} invitations.\n"
+            "Invite at least 3 friends to unlock your link.\n"
+            f"Invite friends using this link: {ref_link}"
+        )
 
-        await update.message.reply_text(msg, reply_markup=reply_markup_main)
+    await update.message.reply_text(msg, reply_markup=reply_markup_main)
 
 
 
@@ -273,7 +298,7 @@ async def buy_premium(update: Update, context: CallbackContext):
     description = "Get access to premium features of your bot."
     payload = "premium_upgrade"        # internal identifier
     currency = "XTR"                   # Telegram Stars
-    prices = [LabeledPrice("Premium Access", 1)]  # 500 Stars
+    prices = [LabeledPrice("Premium Access", 250)]  # 500 Stars
 
 
     await context.bot.send_invoice(
@@ -298,6 +323,9 @@ async def precheckout(update: Update, context: CallbackContext):
 async def successful_payment(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     set_premium(user_id, True)  # DB-Spalte 'ispremium' auf "ja"
+    payment = update.message.successful_payment
+    if payment:
+        add_payment(user_id, payment.total_amount, payment.currency)
     await update.message.reply_text("✅ Payment received! Your premium is now active.")
 
 
@@ -315,6 +343,13 @@ async def support(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(msg, parse_mode="Markdown")
 
+
+async def stars(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    total = get_total_stars()
+    await update.message.reply_text(
+        f"⭐ Total Telegram Stars earned: `{total}`",
+        parse_mode="Markdown"
+    )
 
 
 
