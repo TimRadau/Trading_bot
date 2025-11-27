@@ -1,15 +1,19 @@
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ConversationHandler, ContextTypes
-from signals import get_signal  # Funktion jetzt mit modus parameter
 from database import *
 import random, string
-from bot import ASK_COIN, ASK_REVERSAL, ASK_RESISTANCE, reply_markup_main
-from telegram import LabeledPrice, Update
+from bot import ASK_COIN, ASK_REVERSAL, ASK_RESISTANCE
+from telegram import LabeledPrice
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext, PreCheckoutQueryHandler
 import os
-from divergence import get_reversal_signal
-from resistance import get_support_resistance
-from scanner import coin_scanner_top3
+from task_splitter import (
+    async_signal,
+    async_reversal,
+    async_support_resistance,
+    async_scan_top3,
+    run_blocking,
+)
 
 
 import logging
@@ -50,7 +54,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Use /signal to receive a signal for a coin.\n"
         "Use /help to learn more about the indicators."
     )
-    await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=reply_markup_main)
+    await update.message.reply_text(welcome_text, parse_mode="Markdown")
 
 
 
@@ -66,13 +70,12 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🎯 *Confidence* – Shows how strongly the indicators align (0–100 %).\n"
         "📈 *Trend* – Detects whether the market is currently rising, falling, or moving sideways."
     )
-    await update.message.reply_text(help_text, parse_mode="Markdown", reply_markup=reply_markup_main)
+    await update.message.reply_text(help_text, parse_mode="Markdown")
 
 # --- /signal ---
 async def signal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🔍 Which coin would you like a signal for? (e.g. BTC, SOL, ETH)",
-        reply_markup=reply_markup_main
     )
     return ASK_COIN
 
@@ -86,7 +89,6 @@ async def reversal(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         "🔍 Which coin would you like a signal for? (e.g. BTC, SOL, ETH)",
-        reply_markup=reply_markup_main
     )
     return ASK_REVERSAL
 
@@ -101,7 +103,7 @@ async def handle_reversal_coin(update, context):
     coin = update.message.text.strip()
 
     # Deine eigentliche Analysefunktion
-    result, mode = get_reversal_signal(coin)
+    result, mode = await async_reversal(coin)
 
     await update.message.reply_text(result, parse_mode=mode)
 
@@ -117,7 +119,6 @@ async def resistance(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         "🔍 Which coin would you like a signal for? (e.g. BTC, SOL, ETH)",
-        reply_markup=reply_markup_main
     )
     return ASK_RESISTANCE
 
@@ -132,7 +133,7 @@ async def handle_resistance_coin(update, context):
     coin = update.message.text.strip()
 
     # Deine eigentliche Analysefunktion
-    result, mode = get_support_resistance(coin)
+    result, mode = await async_support_resistance(coin)
 
     await update.message.reply_text(result, parse_mode=mode)
 
@@ -143,12 +144,12 @@ async def handle_resistance_coin(update, context):
 
 async def scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    premium = get_premium(user_id)
+    premium = await run_blocking(get_premium, user_id)
     if not premium["is_premium"]:
         await update.message.reply_text("❌ You need Premium to use this feature.")
         return
 
-    msg = await coin_scanner_top3()
+    msg = await async_scan_top3()
     await update.message.reply_text(msg[0], parse_mode=msg[1])
 
 
@@ -167,8 +168,12 @@ async def compare_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     coin1, coin2 = context.args[0].upper(), context.args[1].upper()
 
     # Verwende den 'balanced'-Modus standardmäßig
-    text1, _ = get_signal(coin1, "balanced")
-    text2, _ = get_signal(coin2, "balanced")
+    text1_result, text2_result = await asyncio.gather(
+        async_signal(coin1, "balanced"),
+        async_signal(coin2, "balanced"),
+    )
+    text1, _ = text1_result
+    text2, _ = text2_result
 
     # Extrahiere die Empfehlung & Confidence aus dem Text
     import re
@@ -237,12 +242,12 @@ async def handle_mode_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await query.edit_message_text("❌ Error: No coin selected.")
         return
 
-    signal_text, parse_mode = get_signal(coin, mode)
+    signal_text, parse_mode = await async_signal(coin, mode)
     await query.edit_message_text(signal_text, parse_mode=parse_mode)
 
 # --- /cancel ---
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ Cancelled.", reply_markup=reply_markup_main)
+    await update.message.reply_text("❌ Cancelled.")
     return ConversationHandler.END
 
 
@@ -284,7 +289,7 @@ async def referral_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"Invite friends using this link: {ref_link}"
         )
 
-    await update.message.reply_text(msg, reply_markup=reply_markup_main)
+    await update.message.reply_text(msg)
 
 
 

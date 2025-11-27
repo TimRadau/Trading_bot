@@ -1,6 +1,6 @@
 import logging
 import os
-from telegram import BotCommand, ReplyKeyboardMarkup
+from telegram import BotCommand
 from telegram.ext import Application, CommandHandler, MessageHandler, ConversationHandler, filters, CallbackQueryHandler
 from dotenv import load_dotenv
 from database import *
@@ -26,10 +26,6 @@ if not BOT_TOKEN:
 ASK_COIN = 1
 ASK_REVERSAL = 2
 ASK_RESISTANCE = 3
-
-# --- Hauptmenü (ReplyKeyboard) ---
-main_menu = [["/start", "/signal", "/help"], ["/cancel"]]
-reply_markup_main = ReplyKeyboardMarkup(main_menu, resize_keyboard=True)
 
 
 # --- Commands-Menü setzen ---
@@ -57,7 +53,12 @@ async def set_commands(application):
 
 # --- Main ---
 def main():
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = (
+        Application.builder()
+        .token(BOT_TOKEN)
+        .concurrent_updates(True)
+        .build()
+    )
     app.post_init = set_commands
 
     conv_handler = ConversationHandler(

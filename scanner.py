@@ -11,7 +11,7 @@ INTERVAL = Client.KLINE_INTERVAL_4HOUR
 
 
 
-async def coin_scanner_top3():
+def coin_scanner_top3():
     client = Client()  # Public API
 
     # 1. Alle USDT-Paare abrufen
